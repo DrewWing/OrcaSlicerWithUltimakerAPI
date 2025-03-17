@@ -8,6 +8,10 @@
         {
             "name": "UltiMaker 2",
             "sub_path": "machine/UltiMaker 2.json"
+        },
+        {
+            "name": "UltiMaker S5",
+            "sub_path": "machine/UltiMaker S5.json"
         }
     ],
     "process_list": [
@@ -37,6 +41,10 @@
         {
             "name": "UltiMaker 2 0.4 nozzle",
             "sub_path": "machine/UltiMaker 2 0.4 nozzle.json"
+        }, 
+        {
+            "name": "UltiMaker S5 0.4 nozzle",
+            "sub_path": "machine/UltiMaker S5 0.4 nozzle.json"
         }
     ]
 }
