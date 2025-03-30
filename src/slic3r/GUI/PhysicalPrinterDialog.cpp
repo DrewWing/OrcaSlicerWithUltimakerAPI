@@ -633,6 +633,18 @@ void PhysicalPrinterDialog::update(bool printer_change)
                 m_optgroup->hide_field("printhost_apikey");
                 m_optgroup->hide_field("printhost_authorization_type");
             }
+        
+        if (opt->value == htUltimaker) {
+                m_optgroup->hide_field("printhost_apikey");
+                m_optgroup->hide_field("printhost_authorization_type");
+                m_optgroup->enable_field("print_host");
+                m_optgroup->show_field("print_host_webui");
+                m_optgroup->hide_field("bbl_use_print_host_webui");
+                m_optgroup->hide_field("printhost_cafile");
+                if (m_printhost_cafile_browse_btn) {
+                    m_printhost_cafile_browse_btn->Disable();
+                }
+            }
     }
     else {
         m_optgroup->set_value("host_type", int(PrintHostType::htOctoPrint), false);

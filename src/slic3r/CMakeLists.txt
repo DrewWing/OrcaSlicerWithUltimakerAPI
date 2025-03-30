@@ -545,6 +545,8 @@ set(SLIC3R_GUI_SOURCES
     Utils/WxFontUtils.hpp
     Utils/Duet.cpp
     Utils/Duet.hpp
+    Utils/Ultimaker.cpp
+    Utils/Ultimaker.hpp
     Utils/FlashAir.cpp
     Utils/FlashAir.hpp
     Utils/AstroBox.cpp
