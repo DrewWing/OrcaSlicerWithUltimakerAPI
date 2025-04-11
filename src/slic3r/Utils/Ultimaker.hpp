@@ -27,6 +27,20 @@ public:
 	bool can_test() const override { return true; }
     PrintHostPostUploadActions get_post_upload_actions() const override { return PrintHostPostUploadAction::StartPrint | PrintHostPostUploadAction::StartSimulation; }
 	std::string get_host() const override { return host; }
+	const std::string& get_apikey() const { return m_apikey; }
+    const std::string& get_cafile() const { return m_cafile; }
+	std::string isAuthorized();
+
+protected:
+	// Host authorization type.
+	AuthorizationType m_authorization_type;
+	// username and password for HTTP Digest Authentization (RFC RFC2617)
+	std::string m_username;
+	std::string m_password;
+
+	std::string m_host;
+    std::string m_apikey;
+    std::string m_cafile;
    
 private:
 	enum class ConnectionType { rrf, dsf, error };
@@ -34,10 +48,12 @@ private:
 	std::string password;
 
 	std::string get_upload_url(const std::string &filename, ConnectionType connectionType) const;
+	std::string get_status_url() const;
 	std::string get_connect_url(const bool dsfUrl) const;
 	std::string get_base_url() const;
 	std::string timestamp_str() const;
 	ConnectionType connect(wxString &msg) const;
+	void set_auth(Http& http) const;
 	void disconnect(ConnectionType connectionType) const;
 	bool start_print(wxString &msg, const std::string &filename, ConnectionType connectionType, bool simulationMode) const;
 	int get_err_code_from_body(const std::string &body) const;

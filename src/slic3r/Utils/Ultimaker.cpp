@@ -34,12 +34,90 @@ Ultimaker::Ultimaker(DynamicPrintConfig *config) :
 
 const char* Ultimaker::get_name() const { return "Ultimaker"; }
 
+// Modified from OctoPrint::test in OctoPrint.cpp
 bool Ultimaker::test(wxString &msg) const
 {
-	auto connectionType = connect(msg);
-	disconnect(connectionType);
+	// auto connectionType = connect(msg);
+	// disconnect(connectionType);
 
-	return connectionType != ConnectionType::error;
+	// return connectionType != ConnectionType::error;
+
+	// Since the request is performed synchronously here,
+    // it is ok to refer to `msg` from within the closure
+    const char* name = get_name();
+
+    bool res = true;
+    auto url = (boost::format("http://%1%/api/v1/system/variant") % m_host).str();
+
+    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get system variant at: %2%") % name % url;
+
+    auto http = Http::get(std::move(url));
+    set_auth(http);
+    http.on_error([&](std::string body, std::string error, unsigned status) {
+        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting system variant: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
+        res = false;
+        msg = format_error(body, error, status);
+        })
+        .on_complete([&, this](std::string body, unsigned) {
+            BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got system variant: %2%") % name % body;
+
+            try {
+                std::stringstream ss(body);
+                pt::ptree ptree;
+                pt::read_json(ss, ptree);
+
+                if (!ptree.get_optional<std::string>("api")) {
+                    res = false;
+                    return;
+                }
+
+				const auto text = ptree.get_optional<std::string>("text");
+				// Validate that response is correct ("Ultimaker 3", "Ultimaker 3 extended" or "Ultimaker S5")
+				res = (text ? (boost::starts_with(*text, "Ultimaker 3") || boost::starts_with(*text, "Ultimaker S5")) : false);
+            }
+            catch (const std::exception&) {
+                res = false;
+                msg = "Could not parse server response";
+            }
+        })
+#ifdef WIN32
+        .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
+        .on_ip_resolve([&](std::string address) {
+            // Workaround for Windows 10/11 mDNS resolve issue, where two mDNS resolves in succession fail.
+            // Remember resolved address to be reused at successive REST API call.
+            msg = GUI::from_u8(address);
+        })
+#endif // WIN32
+        .perform_sync();
+
+     return res;
+}
+
+// Copied over from PrusaLink::set_auth in OctoPrint.cpp
+void Ultimaker::set_auth(Http& http) const
+{
+    switch (m_authorization_type) {
+    case atKeyPassword:
+        http.header("X-Api-Key", get_apikey());
+        break;
+    case atUserPassword:
+        http.auth_digest(m_username, m_password);
+        break;
+    }
+
+    // if (!get_cafile().empty()) {
+    //     http.ca_file(get_cafile());
+    // }
+}
+
+
+std::string Ultimaker::isAuthorized () {
+	//auto url = get_connect_url(false);
+	//auto http = Http::get(std::move(url));
+
+	// TODO: Implement this
+	return "Unimplemented";
+
 }
 
 wxString Ultimaker::get_test_ok_msg () const
@@ -127,6 +205,8 @@ Ultimaker::ConnectionType Ultimaker::connect(wxString &msg) const
 	auto url = get_connect_url(false);
 
 	auto http = Http::get(std::move(url));
+	set_auth(http);
+
 	http.on_error([&](std::string body, std::string error, unsigned status) {
 			auto dsfUrl = get_connect_url(true);
 			auto dsfHttp = Http::get(std::move(dsfUrl));
@@ -197,16 +277,22 @@ std::string Ultimaker::get_upload_url(const std::string &filename, ConnectionTyp
 	}
 }
 
+std::string Ultimaker::get_status_url() const
+{
+	return (boost::format("%1%/printer/status") % get_base_url()).str();
+}
+
 std::string Ultimaker::get_connect_url(const bool dsfUrl) const
 {
 	if (dsfUrl)	{
 		return (boost::format("%1%/printer/status")
 				% get_base_url()).str();
 	} else {
-		return (boost::format("%1%rr_connect?password=%2%&%3%")
+		return (boost::format("%1%/printer/status")
 				% get_base_url()
-				% Http::url_encode(password.empty() ? "reprap" : password) // url_encode is needed because password can contain special characters like `&`, "#", etc.
-				% timestamp_str()).str();
+				// % Http::url_encode(password.empty() ? "reprap" : password) // url_encode is needed because password can contain special characters like `&`, "#", etc.
+				// % timestamp_str()
+				).str();
 	}
 }
 
@@ -216,10 +302,10 @@ std::string Ultimaker::get_base_url() const
 		if (host.back() == '/') {
 			return host;
 		} else {
-			return (boost::format("%1%/") % host).str();
+			return (boost::format("%1%/api/v1") % host).str();
 		}
 	} else {
-		return (boost::format("http://%1%/api/v1/") % host).str();
+		return (boost::format("http://%1%/api/v1") % host).str();
 	}
 }
 
@@ -253,6 +339,7 @@ bool Ultimaker::start_print(wxString &msg, const std::string &filename, Connecti
 			% Http::url_encode(filename)).str();
 
 	auto http = (dsf ? Http::post(std::move(url)) : Http::get(std::move(url)));
+	set_auth(http);
 	if (dsf) {
 		http.set_post_body(
 				(boost::format(simulationMode
