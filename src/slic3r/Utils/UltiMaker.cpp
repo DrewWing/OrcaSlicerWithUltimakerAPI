@@ -36,7 +36,8 @@ UltiMaker::UltiMaker(DynamicPrintConfig *config) :
 	host(config->opt_string("print_host")),
 
     m_api_username(config->opt_string("printhost_user")),
-	m_api_password(config->opt_string("printhost_password"))
+	m_api_password(config->opt_string("printhost_password")),
+	m_ssl_revoke_best_effort(config->opt_bool("printhost_ssl_ignore_revoke"))
 {}
 
 const char* UltiMaker::get_name() const { return "UltiMaker"; }

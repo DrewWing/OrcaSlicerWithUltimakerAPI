@@ -47,6 +47,8 @@ protected:
 	std::string m_api_username;
     std::string m_api_password;
 
+	bool        m_ssl_revoke_best_effort;
+
 	bool makeGriffinCompatible(std::string filepath) const;
    
 private:
