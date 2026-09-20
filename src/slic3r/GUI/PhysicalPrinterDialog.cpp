@@ -755,7 +755,6 @@ void PhysicalPrinterDialog::update(bool printer_change)
                 if (m_printhost_cafile_browse_btn) {
                     m_printhost_cafile_browse_btn->Disable();
                 }
-                m_optgroup->show_field("ultimaker_generate_creds");
                 if (m_printhost_generate_creds_btn) {
                     m_printhost_generate_creds_btn->Enable();
                 }
@@ -774,6 +773,10 @@ void PhysicalPrinterDialog::update(bool printer_change)
         for (const char *opt_key : { "printhost_user", "printhost_password" })
             m_optgroup->show_field(opt_key, auth_type == AuthorizationType::atUserPassword);
     }
+
+    // The "Generate API Key" button is only meaningful for UltiMaker printers.
+    if (m_printhost_generate_creds_btn)
+        m_printhost_generate_creds_btn->Show(tech == ptFFF && m_config->opt_enum<PrintHostType>("host_type") == htUltiMaker);
 
     m_optgroup->show_field("printhost_port", supports_multiple_printers);
     m_printhost_port_browse_btn->Show(supports_multiple_printers);
