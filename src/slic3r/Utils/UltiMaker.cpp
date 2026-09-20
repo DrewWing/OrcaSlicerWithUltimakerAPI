@@ -69,7 +69,7 @@ bool UltiMaker::test(wxString &msg) const
         res = false;
         msg = format_error(body, error, status);
         })
-        .on_complete([name, &res, this](std::string body, unsigned) {
+        .on_complete([name, &res](std::string body, unsigned) {
             BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got system variant: %2%") % name % body;
 
 			// Validate that response is correct ("UltiMaker 3", "UltiMaker 3 extended" or "UltiMaker S5")
@@ -141,7 +141,7 @@ bool UltiMaker::is_authorized() const{
 		}
 
         })
-        .on_complete([&, this](std::string body, unsigned) {
+        .on_complete([&](std::string body, unsigned) {
             BOOST_LOG_TRIVIAL(debug) << boost::format("UltiMaker: url completed without error: %1%") % url;
             BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got credential verification: %2%") % name % body;
             BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: [auth] rtn=%2%") % name % rtn; // DEBUG
@@ -188,7 +188,7 @@ std::string UltiMaker::auth_status() const{
         BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error verifying credentials: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
 
         })
-        .on_complete([&, this](std::string body, unsigned) {
+        .on_complete([&](std::string body, unsigned) {
             BOOST_LOG_TRIVIAL(debug) << boost::format("UltiMaker: url completed without error: %1%") % url;
             BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got credential verification: %2%") % name % body;
 
@@ -247,12 +247,12 @@ bool UltiMaker::generate_auth_creds(wxString &msg) const {
 	http.mime_form_add_text(user_key,user);
 	http.mime_form_add_text(exclusionKey_key,exclusionKey);
 
-    http.on_error([this, name, &msg, &ret](std::string body, std::string error, unsigned status) {
+    http.on_error([name, &msg, &ret](std::string body, std::string error, unsigned status) {
         BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error generating credentials: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
         msg = "Error generating credentials! See the log for details.";
 		ret = false;
         })
-        .on_complete([this, name, &msg, &ret](std::string body, unsigned) {
+        .on_complete([name, &msg, &ret](std::string body, unsigned) {
             BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: body: %2%") % name % body;
             BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: POST request completed without error") % name;
             BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got credential verification: %2%") % name % body;
